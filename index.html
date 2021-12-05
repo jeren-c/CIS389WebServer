@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSE 389 Project</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        * {
+            font-family: Arial, sans-serif;
+        }
+
+        .main {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .title {
+            margin-bottom: 26px;
+            font-size: 30px;
+            font-weight: 500;
+            color: #2f2f2f;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input {
+            width: 280px;
+            margin-bottom: 10px;
+            padding: 12px 14px 12px 8px;
+            border: 2px solid #cecece;
+            outline: none;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            border: 2px solid #25b77a;
+        }
+
+        button[type="submit"] {
+            margin-top: 15px;
+            cursor: pointer;
+            padding: 14px 18px;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            background-color: #25b77a;
+            transition: background-color 0.1s;
+            font-size: 16px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #209d68;
+        }
+    </style>
+</head>
+<body>
+<div class="main">
+    <div class="log-in-container">
+        <h1 class="title">Log In</h1>
+        <form action="" method="post">
+            <input type="text" placeholder="Username" name="username" required>
+            <input type="password" placeholder="Password" name="password" required>
+            <button type="submit">Log In</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

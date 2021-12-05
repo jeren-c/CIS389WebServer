@@ -118,25 +118,127 @@ public class RequestProcessor implements Runnable {
                 // Don't let clients outside the document root
                 && theFile.getCanonicalPath().startsWith(root)) {
           if (version.startsWith("HTTP/")) { // send a MIME header
-            sendHeader(out, "HTTP/1.0 200 OK", contentType, theData.length);
+            sendHeader(out, "HTTP/1.0 200 OK", contentType, 0);
           }
 
         } else { // can't find the file
           if (version.startsWith("HTTP/")) { // send a MIME header
             sendHeader(out, "HTTP/1.0 404 File Not Found",
-                    "text/html; charset=utf-8", body.length());
+                    "text/html; charset=utf-8", 0);
           }
         }
       }
 
-      else if (method.equals("POST")){
-        // TO DO
+      else if (method.equals("POST")){ // If the server receives a POST request
 
+        String fileName = tokens[1]; // Get the file name
+        if (fileName.endsWith("/")) fileName += indexFileName;
+        if (tokens.length > 2) {
+          version = tokens[2];
+        }
+
+        File theFile = new File(rootDirectory,
+                fileName.substring(1, fileName.length()));
+
+        StringBuilder postHeader = new StringBuilder(); // get all request headers
+
+        int count_rn = 0; // check if there are \r\n\r\n pattern
+
+        while (true) {
+          int c = in.read();
+          if (c == '\r' || c == '\n') {
+            count_rn++;
+          } else {
+            count_rn = 0;
+          }
+
+          postHeader.append((char) c);
+          if (count_rn >= 4) break;
+        }
+
+        // Create a HashMap for all the headers
+        Map<String, String> headerMap = new HashMap<>();
+        for (String headerLine : postHeader.toString().split("\r\n")){
+          headerMap.put(headerLine.split(": ")[0], headerLine.split(": ")[1]);
+        }
+
+        // Get the length I need to read from message body
+        int contentLength = Integer.parseInt(headerMap.get("Content-Length"));
+
+        StringBuilder entity = new StringBuilder(); // get all message body
+
+        // Read from message body
+        for (int i = 0; i < contentLength; i++){
+          int c = in.read();
+          entity.append((char) c);
+        }
+
+        // Create the entity map
+        Map<String, String> entityMap = new HashMap<>();
+        for (String item : entity.toString().split("&")){
+          entityMap.put(item.split("=")[0], item.split("=")[1]);
+        }
+
+
+        if (fileName.equals("/form.html")){ // To deal with POST request from form.html
+          if (theFile.canRead()
+                  // Don't let clients outside the document root
+                  && theFile.getCanonicalPath().startsWith(root)) {
+
+
+            // Construct the message body of a post request
+            String body = new StringBuilder("<HTML>\r\n")
+                    .append("<HEAD><TITLE>File Not Found</TITLE>\r\n")
+                    .append("</HEAD>\r\n")
+                    .append("<BODY>")
+                    .append("<H1>Hello! " + entityMap.get("name") + " from " + entityMap.get("city") + "</H1>\r\n")
+                    .append("<H2>POST Request Received at Server Side (Detailed)</H2>\r\n")
+                    .append("<H3>POST Request-Line</H3>\r\n")
+                    .append("<P>" + requestLine.toString() + "</P>\r\n")
+                    .append("<H3>POST Request Headers</H3>\r\n")
+                    .append("<P>" + postHeader.toString().replace("\r\n", "<br>") + "</P>\r\n")
+                    .append("<H3>POST Request Message Body</H3>\r\n")
+                    .append("<P>" + entity.toString() +  "</P>\r\n")
+                    .append("</BODY></HTML>\r\n").toString();
+
+            // Send out
+            if (version.startsWith("HTTP/")) { // send a MIME header
+              sendHeader(out, "HTTP/1.0 200 OK", "text/html; charset=utf-8", body.length());
+            }
+
+            out.write(body);
+            out.flush();
+          }
+
+        } else { // If server doesn't support POST request from this file
+
+          // I still wan to show the POST request I received at the server side
+          String body = new StringBuilder("<HTML>\r\n")
+                  .append("<HEAD><TITLE>POST Request Not Supported</TITLE>\r\n")
+                  .append("</HEAD>\r\n")
+                  .append("<BODY>")
+                  .append("<H1>Post Request not Supported for " + fileName + " </H1>\r\n")
+                  .append("<H2>POST Request Received at Server Side (Detailed)</H2>\r\n")
+                  .append("<H3>POST Request-Line</H3>\r\n")
+                  .append("<P>" + requestLine.toString() + "</P>\r\n")
+                  .append("<H3>POST Request Headers</H3>\r\n")
+                  .append("<P>" + postHeader.toString().replace("\r\n", "<br>") + "</P>\r\n")
+                  .append("<H3>POST Request Message Body</H3>\r\n")
+                  .append("<P>" + entity.toString() +  "</P>\r\n")
+                  .append("</BODY></HTML>\r\n").toString();
+          if (version.startsWith("HTTP/")) { // send a MIME header
+            sendHeader(out, "HTTP/1.0 501 Not Implemented",
+                    "text/html; charset=utf-8", body.length());
+          }
+          out.write(body);
+          out.flush();
+
+        }
       }
 
-      else { // method does not equal "GET"
+      else { // method does not equal "GET" / "HEAD" / "POST"
         String body = new StringBuilder("<HTML>\r\n")
-                .append("<HEAD><TITLE>Not Implemented</TITLE>\r\n")
+                .append("<HEAD><TITLE>File Not Found</TITLE>\r\n")
                 .append("</HEAD>\r\n")
                 .append("<BODY>")
                 .append("<H1>HTTP Error 501: Not Implemented</H1>\r\n")
